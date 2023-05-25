@@ -11,6 +11,7 @@ Refs:
 '''
 
 import logging
+import urllib.parse
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,6 +21,13 @@ def key_details(text = None, filename = None):
 	'''
 
 	gnupghome = __salt__['temp.dir']()
+	urlparsed_filename = urllib.parse.urlparse(filename)
+	if urlparsed_filename.scheme:
+		local_file = __salt__['temp.file']()
+		if urlparsed_filename.scheme in ('https', 'http'):
+			file_content = __salt__['http.query'](filename)
+		__salt__['file.write'](local_file, *file_content.splitlines())
+		filename = local_file
 	__salt__['gpg.import_key'](text = text, filename = filename, gnupghome = gnupghome)
 	result = __salt__['gpg.list_keys'](gnupghome = gnupghome)
 	
